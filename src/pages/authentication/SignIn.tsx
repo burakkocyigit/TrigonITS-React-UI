@@ -22,7 +22,7 @@ import { PATH_AUTH, PATH_DASHBOARD } from '../../constants';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchToken } from '../../redux/auth/tokenSlice';
+import { fetchToken, TokenState } from '../../redux/auth/tokenSlice';
 
 const { Title, Text, Link } = Typography;
 
@@ -33,10 +33,11 @@ type FieldType = {
 };
 
 export const SignInPage = () => {
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
+  // const { token } = useSelector((state: any) => state.tokenReducer);
 
   // const {token} = useSelector(
-  //   (state) => state.tokenReduer
+  //   (state) => state.tokenReducer
   // );
 
   const {
@@ -46,20 +47,50 @@ export const SignInPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values: any) => {
+  // const { token, validated, isSuccess, message: tokenMessage } = useSelector(
+  //   (state: { tokenReducer: TokenState }) => state.tokenReducer
+  // );
+
+  const onFinish = async (values: any) => {
     console.log('Success:', values);
     setLoading(true);
 
-    // dispatch(fetchToken());
+    // message.open({
+    //   type: 'success',
+    //   content: 'Login successful',
+    // });
 
-    message.open({
-      type: 'success',
-      content: 'Login successful',
-    });
+    // setTimeout(() => {
+    //   navigate(PATH_DASHBOARD.default);
+    // }, 5000);
+    try {
+      // **fetchToken thunk'ı ile dispatch çağrısı yapılıyor**
+      const response = await dispatch(
+        fetchToken({ email: values.email!, password: values.password! })
+      ).unwrap();
 
-    setTimeout(() => {
-      navigate(PATH_DASHBOARD.default);
-    }, 5000);
+      // **Başarılı giriş mesajı**
+      if (response.isSuccess)
+        message.open({
+          type: 'success',
+          content: 'Login successful',
+        });
+
+      localStorage.setItem('accessToken', response.token.accessToken);
+
+      setTimeout(() => {
+        navigate(PATH_DASHBOARD.default);
+      }, 5000);
+    } catch (error) {
+      console.error('Login failed:', error);
+      // **Başarısız giriş mesajı**
+      message.open({
+        type: 'error',
+        content: 'Login failed. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onFinishFailed = (errorInfo: any) => {
